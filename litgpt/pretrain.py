@@ -119,7 +119,7 @@ def setup(
     hparams = capture_hparams()
     data = TinyLlama() if data is None else data
 
-    config = Config.from_name(model_name) if model_config is None else model_config
+    config = Config.from_name(model_name) if model_config is None else model_config # if model_config is None, use model_name to get config
     precision = precision or get_default_supported_precision(training=True)
     devices = parse_devices(devices)
     out_dir = init_out_dir(out_dir)
@@ -205,7 +205,7 @@ def main(
     fabric.print(f"Time to instantiate model: {time.perf_counter() - t0:.02f} seconds.")
     fabric.print(f"Total parameters: {num_parameters(model):,}")
 
-    model = torch.compile(model)
+    # model = torch.compile(model)
     model = fabric.setup(model)
 
     extra_kwargs = {"fused": fabric.device.type == "cuda"}
@@ -280,7 +280,7 @@ def fit(
     throughput = ThroughputMonitor(fabric, window_size=5)
 
     with torch.device("meta"):
-        meta_model = GPT(model.config)
+        meta_model = GPT(model.config) # meta model to calculate flops
         x = torch.randint(0, 1, (train.micro_batch_size, meta_model.max_seq_length))
         model_fwd = lambda: meta_model(x)
         model_loss = lambda y: chunked_cross_entropy(y, x, chunk_size=0)
@@ -289,7 +289,7 @@ def fit(
         del meta_model, x
 
     max_tokens_per_device = train.max_tokens // fabric.world_size
-    tokens_per_iter = train.micro_batch_size * model.max_seq_length
+    tokens_per_iter = train.micro_batch_size * model.max_seq_length # 每个迭代步的token数
     max_iters = max_tokens_per_device // tokens_per_iter
     log_iter_interval = train.log_interval * train.gradient_accumulation_iters(devices)
     initial_iter = state["iter_num"]

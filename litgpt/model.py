@@ -27,10 +27,10 @@ class GPT(nn.Module):
 
         self.lm_head = nn.Linear(
             config.n_embd, config.padded_vocab_size, bias=config.lm_head_bias
-        )
+        ) # lm分类层: 将隐状态映射到词汇表大小的线性层
         self.transformer = nn.ModuleDict(
             dict(
-                wte=nn.Embedding(config.padded_vocab_size, config.n_embd),
+                wte=nn.Embedding(config.padded_vocab_size, config.n_embd), # 词嵌入层: 将词汇表索引映射到词嵌入向量
                 h=nn.ModuleList(
                     Block(config, block_idx)
                     for block_idx in range(config.n_layer)
@@ -263,16 +263,16 @@ class Block(nn.Module):
                 " (non-parallel residual and shared attention norm)."
             )
 
-        self.norm_1 = config.norm_class(config.n_embd, eps=config.norm_eps)
-        self.attn = CausalSelfAttention(config, block_idx)
+        self.norm_1 = config.norm_class(config.n_embd, eps=config.norm_eps) # input norm layer
+        self.attn = CausalSelfAttention(config, block_idx) # 
         self.post_attention_norm = (
             config.norm_class(config.n_embd, eps=config.norm_eps) if config.post_attention_norm else nn.Identity()
-        )
+        ) # post attention norm layer
         self.norm_2 = None if config.shared_attention_norm else config.norm_class(config.n_embd, eps=config.norm_eps)
-        self.mlp = config.mlp_class(config)
+        self.mlp = config.mlp_class(config) # mlp层
         self.post_mlp_norm = (
             config.norm_class(config.n_embd, eps=config.norm_eps) if config.post_mlp_norm else nn.Identity()
-        )
+        ) # post mlp norm layer
 
         self.config = config
 
@@ -330,7 +330,7 @@ class CausalSelfAttention(nn.Module):
             config.n_embd,
             (config.n_head + 2 * config.n_query_groups) * config.head_size,  # support for grouped/multi queries
             bias=config.bias or config.attn_bias,
-        )
+        )  # qkv mapping linear layer
         # output projection
         self.proj = nn.Linear(
             config.head_size * config.n_head, config.n_embd, bias=config.bias
@@ -340,7 +340,7 @@ class CausalSelfAttention(nn.Module):
         self.apply_sliding_window_attention = (
             config.sliding_window_size is not None and
             block_idx % config.sliding_window_layer_stride == 0
-        )
+        ) # 是否应用滑动窗口注意力
 
         if config.norm_qk:
             self.norm_q = config.norm_class(config.head_size * config.n_head, eps=config.norm_eps)

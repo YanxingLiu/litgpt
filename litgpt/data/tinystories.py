@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from typing import Optional
+import tempfile
 
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -48,7 +49,11 @@ class TinyStories(DataModule):
     def prepare_data(self) -> None:
         from litdata import optimize
 
-        download(self.data_path)
+        # 确保临时目录存在
+        tmp_dir = os.path.join(tempfile.gettempdir(), "chunks")
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        # download(self.data_path)
 
         files = sorted(glob.glob(str(self.data_path / "TinyStories_all_data" / "*.json")))
         assert len(files) > 0, f"No json files found in {files}"
